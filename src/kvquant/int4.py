@@ -94,8 +94,15 @@ def quantize_int4(
     _validate_inputs(k, v, granularity, sink_tokens)
     k_non_sink = k[:, :, sink_tokens:].detach().to(torch.float32).contiguous()
     v_non_sink = v[:, :, sink_tokens:].detach().to(torch.float32).contiguous()
-    k_scale, k_zero = _parameters(k_non_sink, granularity)
-    v_scale, v_zero = _parameters(v_non_sink, granularity)
+    if granularity == "head" and k_non_sink.shape[2] == 0:
+        scale_shape = (k.shape[0], k.shape[1], 1, 1)
+        k_scale = torch.ones(scale_shape)
+        v_scale = torch.ones(scale_shape)
+        k_zero = torch.zeros(scale_shape)
+        v_zero = torch.zeros(scale_shape)
+    else:
+        k_scale, k_zero = _parameters(k_non_sink, granularity)
+        v_scale, v_zero = _parameters(v_non_sink, granularity)
     k_q = (k_non_sink / k_scale + k_zero).round().clamp(0, 15)
     v_q = (v_non_sink / v_scale + v_zero).round().clamp(0, 15)
     return Int4KVCache(
