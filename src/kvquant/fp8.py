@@ -66,8 +66,13 @@ def quantize_fp8(
     _validate_inputs(k, v, granularity, sink_tokens)
     k_non_sink = k[:, :, sink_tokens:].detach().to(torch.float32).contiguous()
     v_non_sink = v[:, :, sink_tokens:].detach().to(torch.float32).contiguous()
-    k_scale = _scale(k_non_sink, granularity)
-    v_scale = _scale(v_non_sink, granularity)
+    if granularity == "head" and k_non_sink.shape[2] == 0:
+        scale_shape = (k.shape[0], k.shape[1], 1, 1)
+        k_scale = torch.ones(scale_shape)
+        v_scale = torch.ones(scale_shape)
+    else:
+        k_scale = _scale(k_non_sink, granularity)
+        v_scale = _scale(v_non_sink, granularity)
     k_data = (k_non_sink / k_scale).clamp(-FP8_E4M3_MAX, FP8_E4M3_MAX).to(torch.float8_e4m3fn)
     v_data = (v_non_sink / v_scale).clamp(-FP8_E4M3_MAX, FP8_E4M3_MAX).to(torch.float8_e4m3fn)
     return FP8KVCache(
