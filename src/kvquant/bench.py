@@ -16,11 +16,18 @@ from .attention import (
 from .cache import dense_storage_bytes, quantize_kv
 
 
-def _measure_attention(function, repeats: int) -> float:
+def _synchronize(device: str) -> None:
+    if device.startswith("cuda"):
+        torch.cuda.synchronize()
+
+
+def _measure_attention(function, repeats: int, device: str) -> float:
     durations = []
     for _ in range(repeats):
+        _synchronize(device)
         start = time.perf_counter()
         function()
+        _synchronize(device)
         durations.append((time.perf_counter() - start) * 1000)
     return statistics.median(durations)
 
@@ -33,11 +40,17 @@ def run_benchmark(
     sink_tokens: int = 4,
     repeats: int = 3,
     threads: int = 1,
+    device: str = "cpu",
 ) -> dict:
+    if device.startswith("cuda") and not torch.cuda.is_available():
+        raise RuntimeError("CUDA benchmark requested but torch.cuda.is_available() is false")
     torch.set_num_threads(threads)
-    q, k, v = make_long_context_proxy(sequence_length, heads, head_dim, sink_tokens)
+    q, k, v = (
+        tensor.to(device)
+        for tensor in make_long_context_proxy(sequence_length, heads, head_dim, sink_tokens)
+    )
     reference, reference_probabilities = causal_attention(q, k, v)
-    positions = torch.arange(sequence_length)
+    positions = torch.arange(sequence_length, device=device)
     targets = (positions * 37) % (positions + 1)
     target_rate = (reference_probabilities.argmax(dim=-1) == targets).float().mean().item()
     dense_fp32 = dense_storage_bytes(k, v)
@@ -54,7 +67,7 @@ def run_benchmark(
             "storage_bytes": dense_fp32,
             "saved_vs_fp32_percent": 0.0,
             "saved_vs_fp16_percent": 100 * (1 - dense_fp32 / dense_fp16),
-            "attention_ms": _measure_attention(lambda: causal_attention(q, k, v), repeats),
+            "attention_ms": _measure_attention(lambda: causal_attention(q, k, v), repeats, device),
         }
     ]
     fp16_k, fp16_v = k.half(), v.half()
@@ -71,15 +84,17 @@ def run_benchmark(
             "saved_vs_fp32_percent": 50.0,
             "saved_vs_fp16_percent": 0.0,
             "attention_ms": _measure_attention(
-                lambda: causal_attention(q, fp16_k, fp16_v), repeats
+                lambda: causal_attention(q, fp16_k, fp16_v), repeats, device
             ),
         }
     )
     for format in ("fp8_e4m3", "int4"):
         for granularity in ("token", "head"):
             for retained_sinks in (0, sink_tokens):
+                _synchronize(device)
                 start = time.perf_counter()
                 cache = quantize_kv(k, v, format, granularity, retained_sinks)
+                _synchronize(device)
                 quantization_ms = (time.perf_counter() - start) * 1000
                 candidate, candidate_probabilities = quantized_attention(q, cache)
                 storage = cache.storage_bytes
@@ -100,13 +115,13 @@ def run_benchmark(
                         "saved_vs_fp16_percent": 100 * (1 - storage / dense_fp16),
                         "quantization_ms": quantization_ms,
                         "attention_ms": _measure_attention(
-                            lambda cache=cache: quantized_attention(q, cache), repeats
+                            lambda cache=cache: quantized_attention(q, cache), repeats, device
                         ),
                     }
                 )
     result = {
         "scope": (
-            "Synthetic long-range causal-attention proxy on CPU; "
+            f"Synthetic long-range causal-attention proxy on {device}; "
             "real K/V quantization and attention; "
             "FP8 uses torch.float8_e4m3fn storage conversion, not hardware FP8 execution"
         ),
@@ -118,6 +133,7 @@ def run_benchmark(
             "maximum_sink_tokens": sink_tokens,
             "repeats": repeats,
             "threads": threads,
+            "device": device,
             "seed": 71,
         },
         "environment": {
@@ -146,6 +162,7 @@ def main() -> None:
     parser.add_argument("--sink-tokens", type=int, default=4)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--threads", type=int, default=1)
+    parser.add_argument("--device", default="cpu")
     parser.add_argument("--smoke", action="store_true")
     args = parser.parse_args()
     options = vars(args).copy()
