@@ -1,5 +1,5 @@
 {
-  "scope": "Synthetic long-range causal-attention proxy on CPU; real K/V quantization and attention; FP8 uses torch.float8_e4m3fn storage conversion, not hardware FP8 execution",
+  "scope": "Synthetic long-range causal-attention proxy on cpu; real K/V quantization and attention; FP8 uses torch.float8_e4m3fn storage conversion, not hardware FP8 execution",
   "config": {
     "sequence_length": 1024,
     "heads": 4,
@@ -8,6 +8,7 @@
     "maximum_sink_tokens": 4,
     "repeats": 3,
     "threads": 1,
+    "device": "cpu",
     "seed": 71
   },
   "environment": {
@@ -29,7 +30,7 @@
       "storage_bytes": 1048576,
       "saved_vs_fp32_percent": 0.0,
       "saved_vs_fp16_percent": -100.0,
-      "attention_ms": 74.10396100021899
+      "attention_ms": 75.17972799905692
     },
     {
       "format": "fp16",
@@ -42,7 +43,7 @@
       "storage_bytes": 524288,
       "saved_vs_fp32_percent": 50.0,
       "saved_vs_fp16_percent": 0.0,
-      "attention_ms": 77.33602599910228
+      "attention_ms": 72.78562999999849
     },
     {
       "format": "fp8_e4m3",
@@ -55,8 +56,8 @@
       "storage_bytes": 294912,
       "saved_vs_fp32_percent": 71.875,
       "saved_vs_fp16_percent": 43.75,
-      "quantization_ms": 3.288386000349419,
-      "attention_ms": 69.38160799836623
+      "quantization_ms": 2.8147610028099734,
+      "attention_ms": 69.0120580002258
     },
     {
       "format": "fp8_e4m3",
@@ -69,8 +70,8 @@
       "storage_bytes": 297856,
       "saved_vs_fp32_percent": 71.59423828125,
       "saved_vs_fp16_percent": 43.1884765625,
-      "quantization_ms": 2.949376001197379,
-      "attention_ms": 70.6430089994683
+      "quantization_ms": 2.683126000192715,
+      "attention_ms": 83.02607999939937
     },
     {
       "format": "fp8_e4m3",
@@ -83,8 +84,8 @@
       "storage_bytes": 262176,
       "saved_vs_fp32_percent": 74.9969482421875,
       "saved_vs_fp16_percent": 49.993896484375,
-      "quantization_ms": 2.5968150002881885,
-      "attention_ms": 40.13146099896403
+      "quantization_ms": 2.738787999987835,
+      "attention_ms": 45.33722500127624
     },
     {
       "format": "fp8_e4m3",
@@ -97,8 +98,8 @@
       "storage_bytes": 265248,
       "saved_vs_fp32_percent": 74.7039794921875,
       "saved_vs_fp16_percent": 49.407958984375,
-      "quantization_ms": 2.4825010004860815,
-      "attention_ms": 42.25399899951299
+      "quantization_ms": 7.6160349999554455,
+      "attention_ms": 71.29483300013817
     },
     {
       "format": "int4",
@@ -111,8 +112,8 @@
       "storage_bytes": 172032,
       "saved_vs_fp32_percent": 83.59375,
       "saved_vs_fp16_percent": 67.1875,
-      "quantization_ms": 3.0183380004018545,
-      "attention_ms": 78.59826599815278
+      "quantization_ms": 4.601639000611613,
+      "attention_ms": 79.83748800324975
     },
     {
       "format": "int4",
@@ -125,8 +126,8 @@
       "storage_bytes": 175456,
       "saved_vs_fp32_percent": 83.2672119140625,
       "saved_vs_fp16_percent": 66.534423828125,
-      "quantization_ms": 4.049112001666799,
-      "attention_ms": 78.1756830001541
+      "quantization_ms": 4.30943900209968,
+      "attention_ms": 76.60683400172275
     },
     {
       "format": "int4",
@@ -139,8 +140,8 @@
       "storage_bytes": 131112,
       "saved_vs_fp32_percent": 87.49618530273438,
       "saved_vs_fp16_percent": 74.99237060546875,
-      "quantization_ms": 3.2826860006025527,
-      "attention_ms": 44.313056001556106
+      "quantization_ms": 3.507793000608217,
+      "attention_ms": 56.831764999515144
     },
     {
       "format": "int4",
@@ -153,8 +154,8 @@
       "storage_bytes": 134696,
       "saved_vs_fp32_percent": 87.15438842773438,
       "saved_vs_fp16_percent": 74.30877685546875,
-      "quantization_ms": 3.3236179988307413,
-      "attention_ms": 47.34840400124085
+      "quantization_ms": 2.8765230017597787,
+      "attention_ms": 60.397578999982215
     }
   ]
 }
